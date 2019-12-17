@@ -1,0 +1,28 @@
+{
+	"manifest_version": 2,
+	"name": "Instagram Image Scrapper",
+	"version": "0.1",
+	"content_scripts": [
+		{
+			"matches": [
+		  		"https://www.instagram.com/*"
+			],
+			"js": ["jquery-2.2.4.min.js","content.js"]
+		}
+	],
+	"browser_action": {
+		"default_title": "Save Images",
+	  	"default_icon": "images/icon.png"
+	},
+	"background": {
+	  "scripts": [
+	  	"background.js"
+	  ]
+	},
+	"permissions": [
+		"tabs", 
+      	"background",
+		"downloads",
+		"<all_urls>"
+	]
+}
