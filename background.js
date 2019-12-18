@@ -3,6 +3,7 @@
 // Called when the user clicks on the browser action.
 chrome.browserAction.onClicked.addListener(function(tab) {
   // Send a message to the active tab
+  console.log(tab, "tab")
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     var activeTab = tabs[0];
     chrome.tabs.sendMessage(activeTab.id, {"message": "clicked_browser_action"});
@@ -29,3 +30,29 @@ chrome.runtime.onMessage.addListener(
 
 function sendResponse(){
 }
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+	if (tabId && changeInfo && tab && tab.url) {
+		const u = new URL(tab.url)
+		// const tag = u.searchParams.get('tag')
+		const domain = tab.url.split('/')[2]
+		if(domain === "www.instagram.com") {
+			chrome.browserAction.setIcon({path: 'images/icon1.png'});
+		} else {
+			chrome.browserAction.setIcon({path: 'images/icon.png'});			
+		}
+	}
+})
+
+// chrome.tabs.onActivated.addListener((tabId, changeInfo, tab) => {
+// 	if (tabId && changeInfo && tab && tab.url) {
+// 		const u = new URL(tab.url)
+// 		// const tag = u.searchParams.get('tag')
+// 		const domain = tab.url.split('/')[2]
+// 		if(domain === "www.instagram.com") {
+// 			chrome.browserAction.setIcon({path: 'images/icon1.png'});
+// 		} else {
+// 			chrome.browserAction.setIcon({path: 'images/icon.png'});			
+// 		}
+// 	}
+// })

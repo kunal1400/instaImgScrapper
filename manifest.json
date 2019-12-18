@@ -1,5 +1,7 @@
 {
 	"manifest_version": 2,
+	"description": "A plain text description",
+	"author": "Kunal Malviya",
 	"name": "Instagram Image Scrapper",
 	"version": "0.1",
 	"content_scripts": [
@@ -26,6 +28,7 @@
 		"tabs", 
       	"background",
 		"downloads",
+		"storage",
 		"<all_urls>"
 	]
 }

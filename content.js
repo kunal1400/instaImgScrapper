@@ -9,10 +9,10 @@ chrome.runtime.onMessage.addListener(
     if( request.message === "clicked_browser_action" ) {    
     	var instagramImages = saveInstagramData();
     	console.log(instagramImages, "instagramImages")
-    	if(instagramImages.length > 0) {
-    		var param = {collection : instagramImages};
-  			chrome.runtime.sendMessage(param);
-    	}
+    	// if(instagramImages.length > 0) {
+    	// 	var param = {collection : instagramImages};
+  			// chrome.runtime.sendMessage(param);
+    	// }
     } else {
     	alert("This extenstion is only for instagram")
     }
