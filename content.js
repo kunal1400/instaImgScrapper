@@ -6,13 +6,46 @@ var intervalForAutoScroll = 5000;
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-    if( request.message === "clicked_browser_action" ) {    
-    	var instagramImages = saveInstagramData();
-    	console.log(instagramImages, "instagramImages")
-    	// if(instagramImages.length > 0) {
-    	// 	var param = {collection : instagramImages};
-  			// chrome.runtime.sendMessage(param);
-    	// }
+    if( request.message === "clicked_browser_action" ) {
+    	let url = window.location.href;
+
+    	// If channel is not present in url then save images
+    	if(url.indexOf("channel") === -1) {
+    		var instagramImages = saveInstagramData("article div.Nnq7C div.v1Nh3");
+    		if(instagramImages.length > 0) {
+	    		var param = {collection : instagramImages};
+	  			chrome.runtime.sendMessage(param);
+	    	}
+    	}
+    	else {
+    		var instagramVideos = saveInstagramVideo("div.Nnq7C a._bz0w");
+    		console.log(instagramVideos, "instagramVideos")
+    		
+    		// if(instagramVideos.length > 0) {	    		
+	  			// chrome.runtime.sendMessage({
+	  			// 	videos : instagramVideos
+	  			// });
+	    	// }
+
+    		if(instagramVideos) {
+    			var index = 0;
+    			var fetchNext = function() {
+    				if(index < instagramVideos.length) {
+    					let data = instagramVideos[index];
+    					console.log(data, index)
+    					// window.open(url.link, '_blank');
+    					index++;
+    					GetInstagramVideo(data.link)
+    					fetchNext();
+    				}
+    				else {
+    					console.log("loop ended")
+    				}
+    			}
+    			fetchNext();
+    		}
+
+    	}    	
     } else {
     	alert("This extenstion is only for instagram")
     }
@@ -26,7 +59,7 @@ var startScrolling = () => {
 	var scrollPos = (document.body.scrollHeight - window.scrollY) - sbHeight
 	window.scrollTo(0, document.body.scrollHeight)
 	if(scrollPos === 0) {
-		saveInstagramData()
+		saveInstagramData("article div.Nnq7C div.v1Nh3")
 		nuOfTimesScrollReachedAtEnd++;		
 		// console.log("Scroll reached now push the content inside our middleware")
 		if(nuOfTimesScrollReachedAtEnd > 50) {
@@ -61,23 +94,68 @@ var startScrolling = () => {
 // 	}		
 // }
 
-// Not Using localstorage for storing data
-const saveInstagramData = () => {	
-	let array = document.querySelectorAll("article div.Nnq7C div.v1Nh3")	
+// Not Using localstorage for storing data i.e "article div.Nnq7C div.v1Nh3"
+const saveInstagramData = (selector) => {	
+	let array = document.querySelectorAll(selector)	
 	for (var i = 0; i < array.length; i++) {
 		let node = array[i]
 		if(!node.classList.contains("extracted")) {
-			let image = node.getElementsByTagName("img")[0].src;
-			let link = node.getElementsByTagName("a")[0].href;
+			let image = node.getElementsByTagName("img");
+			let link = node.getElementsByTagName("a");
+			
+			// If image src is present
+			if(image) {
+				image = node.getElementsByTagName("img")[0].src;
+			}
+
+			// If anchor link is present
+			if(link) {
+				link = node.getElementsByTagName("a")[0].href;
+			}
+
+			// storing image in link in object
 			let obj = {image, link}
+
 			// downloadResource(image)
 			response.push(obj)
 			node.classList.add("extracted")
 		    if(i == array.length -1) {
 		      return response
-		      console.log(response, "Extracted Items")
 		    }
 		}
+	}
+}
+
+// Not Using localstorage for storing data i.e "article div.Nnq7C div.v1Nh3"
+const saveInstagramVideo = (selector) => {	
+	let array = document.querySelectorAll(selector)	
+	for (var i = 0; i < array.length; i++) {
+		let node = array[i]
+		if(!node.classList.contains("extracted")) {			
+			// If image src is present
+			if(node) {
+				link = node.href;
+			}
+
+			// storing image in link in object
+			let obj = {link}
+			
+			response.push(obj)
+			node.classList.add("extracted")
+		    if(i == array.length -1) {
+		      return response
+		    }
+		}
+	}
+}
+
+const splitUrl = () => {
+	let url = window.location.href;
+	return url.split("/")
+	if(array[3]) {
+		return array[3]
+	} else {
+		return;
 	}
 }
 
@@ -124,3 +202,47 @@ function _anchorDownloader(url, filename) {
 		'</body>' +
 	'</html>\'';
 };
+
+
+const GetInstagramVideo = (url) => {
+	fetch(url, {
+		mode: 'no-cors',
+		method: 'get'
+	})	
+	.then(response => {
+		console.log(response, response.type, "data after ajax")
+	})
+	.catch(function(err) {
+		console.log(err) // this won't trigger because there is no actual error
+	});
+	// var data = null;
+
+	// var xhr = new XMLHttpRequest();
+	// xhr.withCredentials = true;
+
+	// xhr.addEventListener("readystatechange", function () {
+	// 	if (this.readyState === 4) {
+	// 		console.log(this.responseText);
+	// 	}
+	// });
+
+	// xhr.open("GET", url);
+	// xhr.setRequestHeader("cache-control", "no-cache");
+	// xhr.setRequestHeader("Postman-Token", "91288084-8bab-459f-9a28-56ef74fd8005");
+
+	// xhr.send(data);
+	
+
+	  // var video_dom = document.querySelector("meta[property='og:video:secure_url']");
+	  // var video_url = "";
+	  // if (video_dom) {
+	  //     video_url = video_dom.getAttribute("content");
+	  // }  
+	  // if (!ValidURL(video_url)) {
+	  //     video_dom = document.querySelector("meta[property='og:video']");
+	  //     if (video_dom) {
+	  //         video_url = video_dom.getAttribute("content");
+	  //     }
+	  // }
+	  // return video_url;
+}
