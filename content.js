@@ -9,43 +9,44 @@ chrome.runtime.onMessage.addListener(
     if( request.message === "clicked_browser_action" ) {
     	let url = window.location.href;
 
-    	// If channel is not present in url then save images
+    	// If channel is not present in url then we are assuming that user is on posts page and saving images
     	if(url.indexOf("channel") === -1) {
     		var instagramImages = saveInstagramData("article div.Nnq7C div.v1Nh3");
-    		if(instagramImages.length > 0) {
+    		if(instagramImages && instagramImages.length > 0) {
 	    		var param = {collection : instagramImages};
 	  			chrome.runtime.sendMessage(param);
 	    	}
     	}
     	else {
-    		var instagramVideos = saveInstagramVideo("div.Nnq7C a._bz0w");
-    		console.log(instagramVideos, "instagramVideos")
-    		
-    		// if(instagramVideos.length > 0) {	    		
-	  			// chrome.runtime.sendMessage({
-	  			// 	videos : instagramVideos
-	  			// });
-	    	// }
-
-    		if(instagramVideos) {
+    		var instagramDomForVideos = saveInstagramVideo("div.Nnq7C a._bz0w");    		
+    		if(instagramDomForVideos) {
     			var index = 0;
+    			var videosArray = [];
     			var fetchNext = function() {
-    				if(index < instagramVideos.length) {
-    					let data = instagramVideos[index];
-    					console.log(data, index)
+    				if(index < instagramDomForVideos.length) {
+    					let data = instagramDomForVideos[index];
     					// window.open(url.link, '_blank');
     					index++;
     					GetInstagramVideo(data.link)
-    					fetchNext();
+    					.then(function(url) {
+    						videosArray.push(url)							
+    						fetchNext();
+    					})
+    					.catch(function(error) {
+    						console.log(error, "this is the error")
+    					})
     				}
     				else {
-    					console.log("loop ended")
+						if(videosArray.length > 0) {
+							chrome.runtime.sendMessage({
+								videos : videosArray
+							});
+						}
     				}
     			}
     			fetchNext();
     		}
-
-    	}    	
+    	}
     } else {
     	alert("This extenstion is only for instagram")
     }
@@ -67,32 +68,6 @@ var startScrolling = () => {
 		}
 	}
 }
-
-// // Using localstorage for storing data
-// function saveInstagramDataInLocalStorage() {
-// 	if (typeof(Storage) !== "undefined") {
-//     	let array = document.querySelectorAll("article div.Nnq7C div.v1Nh3")
-// 		let response = []
-// 		for (var i = 0; i < array.length; i++) {
-// 			let node = array[i]
-// 			if(!node.classList.contains("extracted")) {
-// 				let image = node.getElementsByTagName("img")[0].src;
-// 				let link = node.getElementsByTagName("a")[0].href;
-// 				let obj = {image, link}
-// 				response.push(obj)
-// 				node.classList.add("extracted")
-// 			    if(i == array.length -1) {
-// 			      // return response
-// 			      console.log(response, "Items stored in localStorage")
-// 			      window.localStorage.setItem('intagramExtractedContent', JSON.stringify(response));
-// 			    }
-// 			}
-// 		}
-// 	} else {
-// 	    // No web storage Support.
-// 	    alert("No web storage Support")
-// 	}		
-// }
 
 // Not Using localstorage for storing data i.e "article div.Nnq7C div.v1Nh3"
 const saveInstagramData = (selector) => {	
@@ -205,44 +180,42 @@ function _anchorDownloader(url, filename) {
 
 
 const GetInstagramVideo = (url) => {
-	fetch(url, {
-		mode: 'no-cors',
+	return fetch(url, {
 		method: 'get'
 	})	
-	.then(response => {
-		console.log(response, response.type, "data after ajax")
+	.then(response => {		
+		return response.text()
+	})
+	.then(text => {
+		var parser = new DOMParser();
+		var doc = parser.parseFromString(text, 'text/html');
+		return doc.head;
+	})
+	.then(head => {
+		let instagramVideoUrl = getInstagramVideoUrl(head);
+		return instagramVideoUrl;
 	})
 	.catch(function(err) {
-		console.log(err) // this won't trigger because there is no actual error
-	});
-	// var data = null;
+		console.log(err)
+		return err;
+	});	
+}
 
-	// var xhr = new XMLHttpRequest();
-	// xhr.withCredentials = true;
+function getInstagramVideoUrl(node) {
+  var video_url = "";
+  var video_dom = node.querySelector("meta[property='og:video:secure_url']");
+  if (video_dom) {
+    	video_url = video_dom.getAttribute("content");
+  }  
+  if (!ValidURL(video_url)) {
+    	video_dom = node.querySelector("meta[property='og:video']");
+    	if (video_dom) {
+        	video_url = video_dom.getAttribute("content");
+    	}
+  }
+  return video_url;
+}
 
-	// xhr.addEventListener("readystatechange", function () {
-	// 	if (this.readyState === 4) {
-	// 		console.log(this.responseText);
-	// 	}
-	// });
-
-	// xhr.open("GET", url);
-	// xhr.setRequestHeader("cache-control", "no-cache");
-	// xhr.setRequestHeader("Postman-Token", "91288084-8bab-459f-9a28-56ef74fd8005");
-
-	// xhr.send(data);
-	
-
-	  // var video_dom = document.querySelector("meta[property='og:video:secure_url']");
-	  // var video_url = "";
-	  // if (video_dom) {
-	  //     video_url = video_dom.getAttribute("content");
-	  // }  
-	  // if (!ValidURL(video_url)) {
-	  //     video_dom = document.querySelector("meta[property='og:video']");
-	  //     if (video_dom) {
-	  //         video_url = video_dom.getAttribute("content");
-	  //     }
-	  // }
-	  // return video_url;
+function ValidURL(value){
+    return /^(https?):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i.test(value);
 }

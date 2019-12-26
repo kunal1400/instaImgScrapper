@@ -1,6 +1,6 @@
 {
 	"manifest_version": 2,
-	"description": "A plain text description",
+	"description": "Instagram Page Scrapper is the chrome extension which allows you to download all POSTS, IGTV and TAGGED media with just one click.",
 	"author": "Kunal Malviya",
 	"name": "Instagram Image Scrapper",
 	"version": "0.1",
@@ -19,6 +19,11 @@
 		"default_title": "Save Images",
 	  	"default_icon": "images/icon.png"
 	},
+	"icons": { 
+		"16": "images/16.png",
+        "48": "images/48.png",
+        "128": "images/128.png" 
+     },
 	"background": {
 	  "scripts": [
 	  	"background.js"
